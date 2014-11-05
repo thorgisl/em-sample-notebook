@@ -1,6 +1,5 @@
-from collections import Counter, OrderedDict
+from collections import Counter
 import itertools
-from modulefinder import Module, ModuleFinder
 
 from typecheck import typecheck
 import typecheck as tc
@@ -9,6 +8,7 @@ import networkx as nx
 
 import matplotlib.pyplot as plt
 
+from modfind import CustomFinder
 from modutil import make_colors, shorten
 
 
@@ -74,91 +74,77 @@ module_lookup = dict(list(
                       for (layer, match) in matplotlib_groupings.items()])))
 
 
-class CustomFinder(ModuleFinder):
-    def __init__(self, include: list=None, exclude: list=None,
+class ModGrapher:
+    def __init__(self, source: str="", include: list=None, exclude: list=None,
                  root: str="__main__", layout: str="dot",
                  graph_class: nx.Graph=nx.Graph, mode: str="full",
                  *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.cf_root = root
+        self.source = source
+        include = include or ["matpl", "mpl"]
+        exclude = exclude or ["matplotlib._", "ft2font", "ttconv"]
+        self.finder = CustomFinder(include, exclude)
+        self.root = root
         self.debug = False
-        self.cf_include = include or ["matpl", "mpl"]
-        self.cf_exclude = exclude or ["matplotlib._", "ft2font", "ttconv"]
-        self.cf_layout = layout
-        self.cf_graph_class = graph_class
-        self.cf_mode = mode
-        self.cf_imports = OrderedDict()
-        self.cf_weights = Counter()
-        self.cf_node_multiplier = 1
-
-    @typecheck
-    def matches(self, name: str) -> bool:
-        include = True in [name.startswith(x) for x in self.cf_include]
-        exclude = True in [name.startswith(x) for x in self.cf_exclude]
-        if include and not exclude:
-            return True
-        return False
-
-    @typecheck
-    def import_hook(self, name: str, caller: tc.optional(Module)=None,
-                    fromlist: tc.optional(list)=None,
-                    level: int=-1) -> tc.optional(Module):
-        if self.matches(name):
-            if caller:
-                if self.debug:
-                    print(caller.__name__, " -> ", name)
-                self.cf_weights[name] += 1
-                self.cf_imports[(caller.__name__, name)] = 1
-            super().import_hook(name, caller, fromlist, level)
+        self.layout = layout
+        self.graph_class = graph_class
+        self.mode = mode
+        self.weights = Counter()
+        self.node_multiplier = 1
 
     @typecheck
     def relations(self) -> list:
-        return [(key, val, {"weight": self.cf_weights[val]})
-                for (key, val) in self.cf_imports.keys()]
+        self.weights = self.finder.cf_weights
+        return [(key, val, {"weight": self.weights[val]})
+                for (key, val) in self.finder.cf_imports.keys()]
 
     @typecheck
     def simple_relations(self) -> list:
         new_weights = Counter()
         relations = []
-        for (key, val) in self.cf_imports.keys():
+        for (key, val) in self.finder.cf_imports.keys():
             (short_key, short_val) = (shorten(key), shorten(val))
-            new_weights[short_val] += self.cf_weights[val]
+            new_weights[short_val] += self.finder.cf_weights[val]
             relations.append((short_key, short_val))
-        self.cf_weights = new_weights
-        return [(key, val, {"weight": self.cf_weights[val]})
+        self.weights = new_weights
+        return [(key, val, {"weight": self.weights[val]})
                 for (key, val) in relations]
 
     @typecheck
     def as_dict(self) -> list:
-        return [dict([x]) for x in self.cf_imports.keys()]
+        return [dict([x]) for x in self.finder.cf_imports.keys()]
 
     @typecheck
     def graph(self) -> nx.Graph:
-        if self.cf_mode == "simple":
+        if self.mode == "simple":
             data = self.simple_relations()
-        elif self.cf_mode == "full":
+        elif self.mode == "full":
             data = self.relations()
-        elif self.cf_mode == "reduced-structure":
+        elif self.mode == "reduced-structure":
             data = self.reduced_relations()
-        elif self.cf_mode == "simple-structure":
+        elif self.mode == "simple-structure":
             pass
-        elif self.cf_mode == "full-structure":
+        elif self.mode == "full-structure":
             pass
         else:
             raise Exception("Undefined mode.")
-        return self.cf_graph_class(data)
+        return self.graph_class(data)
 
     @typecheck
     def render(self, layout: str="", labels: bool=True,
-               mode: str="") -> tc.optional(None):
+               mode: str="", source: str="") -> tc.optional(None):
         if layout:
-            self.cf_layout = layout
+            self.layout = layout
         if mode:
-            self.cf_mode = mode
-        if self.cf_mode == "simple":
-            self.cf_node_multiplier = 0.7
-        elif self.cf_mode == "full":
-            self.cf_node_multiplier = 20
+            self.mode = mode
+        if source:
+            self.source = source
+            self.weights = Counter()
+        if self.mode == "simple":
+            self.node_multiplier = 0.7
+        elif self.mode == "full":
+            self.node_multiplier = 20
+        if not self.weights:
+            self.finder.run_script(self.source)
         self.draw(labels)
         return None
 
@@ -166,10 +152,10 @@ class CustomFinder(ModuleFinder):
     def draw(self, labels: bool) -> tc.optional(None):
         plt.figure(figsize=(12, 12))
         graph = self.graph()
-        node_sizes = [self.cf_node_multiplier * self.cf_weights[x]
+        node_sizes = [self.node_multiplier * self.weights[x]
                       for x in graph]
         node_colors = [float(x) for x in make_colors(graph)]
-        pos = nx.graphviz_layout(graph, prog=self.cf_layout, root=self.cf_root)
+        pos = nx.graphviz_layout(graph, prog=self.layout, root=self.root)
         nx.draw(graph, pos, node_size=node_sizes, node_color=node_colors,
                 with_labels=labels, alpha=0.5, edge_color="#666666")
         return None
