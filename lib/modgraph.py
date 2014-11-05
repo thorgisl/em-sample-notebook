@@ -84,7 +84,7 @@ class CustomFinder(ModuleFinder):
     def graph(self) -> nx.Graph:
         if self.cf_mode == "simple":
             data = self.simple_relations()
-            self.cf_node_multiplier =10 
+            self.cf_node_multiplier =10
         elif self.cf_mode == "full":
             data = self.relations()
             self.cf_node_multiplier = 200
