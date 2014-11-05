@@ -160,25 +160,6 @@ class CustomFinder(ModuleFinder):
             raise Exception("Undefined mode.")
         return self.cf_graph_class(data)
 
-    def save(self) -> None:
-        plt.figure(figsize=(35,35))
-        if self.cf_mode == "simple":
-            self.cf_node_multiplier = 10
-        elif self.cf_mode == "full":
-            self.cf_node_multiplier = 200
-        graph = self.graph()
-        node_sizes = [self.cf_node_multiplier * self.cf_weights[x]
-                     for x in graph]
-        node_colors = [float(x) for x in make_colors(graph)]
-        if self.debug:
-            print("\nDegrees: ", [graph.degree(x) for x in graph])
-            print("\nShorten: ", [shorten(x) for x in graph])
-            print("\nColors: ", [int(x) for x in make_colors(graph)])
-        pos = nx.graphviz_layout(graph, prog=self.cf_layout, root=self.cf_root)
-        nx.draw(graph, pos, node_size=node_sizes, node_color=node_colors,
-                with_labels=True, alpha=0.5)
-        plt.savefig("modgraph.png")
-
     def render(self, layout:str="", labels:bool=True, mode:str="") -> None:
         if layout:
             self.cf_layout = layout
