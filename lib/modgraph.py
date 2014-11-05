@@ -100,8 +100,8 @@ def make_colors(graph:list) -> list:
 
 
 class CustomFinder(ModuleFinder):
-    def __init__(self, root:str, include:list, layout:str, graph_class:type,
-                 mode:str, *args, **kwargs):
+    def __init__(self, include:list, root:str="__main__", layout:str="dot",
+                 graph_class:type=nx.Graph, mode:str="full", *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.cf_root = root
         self.debug = False
@@ -165,11 +165,14 @@ class CustomFinder(ModuleFinder):
             self.cf_layout = layout
         if mode:
             self.cf_mode = mode
-        plt.figure(figsize=(12,12))
         if self.cf_mode == "simple":
             self.cf_node_multiplier = 0.7
         elif self.cf_mode == "full":
             self.cf_node_multiplier = 20
+        self.draw(labels)
+
+    def draw(self, labels:bool) -> None:
+        plt.figure(figsize=(12,12))
         graph = self.graph()
         node_sizes = [self.cf_node_multiplier * self.cf_weights[x]
                      for x in graph]
