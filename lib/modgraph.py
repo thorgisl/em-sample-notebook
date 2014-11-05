@@ -100,19 +100,20 @@ def make_colors(graph:list) -> list:
 
 
 class CustomFinder(ModuleFinder):
-    def __init__(self, include:list, root:str="__main__", layout:str="dot",
+    def __init__(self, include:list=None, exclude:list=None,
+                 root:str="__main__", layout:str="dot",
                  graph_class:type=nx.Graph, mode:str="full", *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.cf_root = root
         self.debug = False
-        self.cf_include = include
+        self.cf_include = include or ["matpl", "mpl"]
+        self.cf_exclude = exclude or ["matplotlib._", "ft2font", "ttconv"]
         self.cf_layout = layout
         self.cf_graph_class = graph_class
         self.cf_mode = mode
         self.cf_imports = OrderedDict()
         self.cf_weights = Counter()
         self.cf_node_multiplier = 1
-        self.cf_exclude = ["matplotlib._", "ft2font", "ttconv"]
 
     def matches(self, name:str) -> bool:
         if ((True in [name.startswith(x) for x in self.cf_include])
@@ -154,8 +155,12 @@ class CustomFinder(ModuleFinder):
             data = self.simple_relations()
         elif self.cf_mode == "full":
             data = self.relations()
-        elif self.cf_mode == "structured":
-            data = self.structured_relations()
+        elif self.cf_mode == "reduced-structure":
+            data = self.reduced_relations()
+        elif self.cf_mode == "simple-structure":
+            pass
+        elif self.cf_mode == "full-structure":
+            pass
         else:
             raise Exception("Undefined mode.")
         return self.cf_graph_class(data)
