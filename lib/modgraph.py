@@ -1,9 +1,6 @@
-#!/usr/bin/env python
 from collections import Counter, OrderedDict
-from functools import lru_cache
 import itertools
 from modulefinder import Module, ModuleFinder
-import sys
 
 from typecheck import typecheck
 import typecheck as tc
@@ -11,6 +8,8 @@ import typecheck as tc
 import networkx as nx
 
 import matplotlib.pyplot as plt
+
+from modutil import make_colors, shorten
 
 
 matplotlib_groupings = {
@@ -70,44 +69,15 @@ matplotlib_groupings = {
                   "matplotlib.sphinxext"]}
 
 
-module_lookup = dict(list(itertools.chain(*
-    [[(x, layer) for x in match]
-     for (layer, match) in matplotlib_groupings.items()])))
-
-
-@typecheck
-def shorten(mod_name:str, length:int=2) -> str:
-    return ".".join(mod_name.split(".")[:length])
-
-
-@lru_cache(maxsize=4095)
-@typecheck
-def levenshtein_distance(s:str, t:str) -> int:
-    if not s: return len(t)
-    if not t: return len(s)
-    if s[0] == t[0]: return levenshtein_distance(s[1:], t[1:])
-    l1 = levenshtein_distance(s, t[1:])
-    l2 = levenshtein_distance(s[1:], t)
-    l3 = levenshtein_distance(s[1:], t[1:])
-    return 1 + min(l1, l2, l3)
-
-@typecheck
-def make_colors(graph:nx.Graph) -> map:
-    names = graph.nodes()
-    longest = max(names)
-    raw = [levenshtein_distance(x, longest) for x in names]
-    largest_raw = max(raw)
-    degrees = [graph.degree(x) for x in graph]
-    largest_degrees = max(degrees)
-    return map(lambda x, y: x + y,
-               [int(10 * x/largest_degrees) for x in degrees],
-               [10 * x/largest_raw for x in raw])
+module_lookup = dict(list(
+    itertools.chain(*[[(x, layer) for x in match]
+                      for (layer, match) in matplotlib_groupings.items()])))
 
 
 class CustomFinder(ModuleFinder):
-    def __init__(self, include:list=None, exclude:list=None,
-                 root:str="__main__", layout:str="dot",
-                 graph_class:nx.Graph=nx.Graph, mode:str="full",
+    def __init__(self, include: list=None, exclude: list=None,
+                 root: str="__main__", layout: str="dot",
+                 graph_class: nx.Graph=nx.Graph, mode: str="full",
                  *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.cf_root = root
@@ -122,17 +92,17 @@ class CustomFinder(ModuleFinder):
         self.cf_node_multiplier = 1
 
     @typecheck
-    def matches(self, name:str) -> bool:
-        if ((True in [name.startswith(x) for x in self.cf_include])
-            and
-            (True not in [name.startswith(x) for x in self.cf_exclude])):
+    def matches(self, name: str) -> bool:
+        include = True in [name.startswith(x) for x in self.cf_include]
+        exclude = True in [name.startswith(x) for x in self.cf_exclude]
+        if include and not exclude:
             return True
         return False
 
     @typecheck
-    def import_hook(self, name:str, caller:tc.optional(Module)=None,
-                    fromlist:tc.optional(list)=None,
-                    level:int=-1) -> tc.optional(Module):
+    def import_hook(self, name: str, caller: tc.optional(Module)=None,
+                    fromlist: tc.optional(list)=None,
+                    level: int=-1) -> tc.optional(Module):
         if self.matches(name):
             if caller:
                 if self.debug:
@@ -179,8 +149,8 @@ class CustomFinder(ModuleFinder):
         return self.cf_graph_class(data)
 
     @typecheck
-    def render(self, layout:str="", labels:bool=True,
-               mode:str="") -> tc.optional(None):
+    def render(self, layout: str="", labels: bool=True,
+               mode: str="") -> tc.optional(None):
         if layout:
             self.cf_layout = layout
         if mode:
@@ -193,11 +163,11 @@ class CustomFinder(ModuleFinder):
         return None
 
     @typecheck
-    def draw(self, labels:bool) -> tc.optional(None):
-        plt.figure(figsize=(12,12))
+    def draw(self, labels: bool) -> tc.optional(None):
+        plt.figure(figsize=(12, 12))
         graph = self.graph()
         node_sizes = [self.cf_node_multiplier * self.cf_weights[x]
-                     for x in graph]
+                      for x in graph]
         node_colors = [float(x) for x in make_colors(graph)]
         pos = nx.graphviz_layout(graph, prog=self.cf_layout, root=self.cf_root)
         nx.draw(graph, pos, node_size=node_sizes, node_color=node_colors,
