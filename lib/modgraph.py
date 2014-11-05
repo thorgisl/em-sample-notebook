@@ -5,6 +5,9 @@ import itertools
 from modulefinder import Module, ModuleFinder
 import sys
 
+from typecheck import typecheck
+import typecheck as tc
+
 import networkx as nx
 
 import matplotlib.pyplot as plt
@@ -72,11 +75,13 @@ module_lookup = dict(list(itertools.chain(*
      for (layer, match) in matplotlib_groupings.items()])))
 
 
+@typecheck
 def shorten(mod_name:str, length:int=2) -> str:
     return ".".join(mod_name.split(".")[:length])
 
 
 @lru_cache(maxsize=4095)
+@typecheck
 def levenshtein_distance(s:str, t:str) -> int:
     if not s: return len(t)
     if not t: return len(s)
@@ -86,8 +91,8 @@ def levenshtein_distance(s:str, t:str) -> int:
     l3 = levenshtein_distance(s[1:], t[1:])
     return 1 + min(l1, l2, l3)
 
-
-def make_colors(graph:list) -> list:
+@typecheck
+def make_colors(graph:nx.Graph) -> map:
     names = graph.nodes()
     longest = max(names)
     raw = [levenshtein_distance(x, longest) for x in names]
@@ -102,7 +107,8 @@ def make_colors(graph:list) -> list:
 class CustomFinder(ModuleFinder):
     def __init__(self, include:list=None, exclude:list=None,
                  root:str="__main__", layout:str="dot",
-                 graph_class:type=nx.Graph, mode:str="full", *args, **kwargs):
+                 graph_class:nx.Graph=nx.Graph, mode:str="full",
+                 *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.cf_root = root
         self.debug = False
@@ -115,6 +121,7 @@ class CustomFinder(ModuleFinder):
         self.cf_weights = Counter()
         self.cf_node_multiplier = 1
 
+    @typecheck
     def matches(self, name:str) -> bool:
         if ((True in [name.startswith(x) for x in self.cf_include])
             and
@@ -122,8 +129,10 @@ class CustomFinder(ModuleFinder):
             return True
         return False
 
-    def import_hook(self, name:str, caller:Module=None, fromlist:list=None,
-                    level:int=-1) -> Module:
+    @typecheck
+    def import_hook(self, name:str, caller:tc.optional(Module)=None,
+                    fromlist:tc.optional(list)=None,
+                    level:int=-1) -> tc.optional(Module):
         if self.matches(name):
             if caller:
                 if self.debug:
@@ -132,10 +141,12 @@ class CustomFinder(ModuleFinder):
                 self.cf_imports[(caller.__name__, name)] = 1
             super().import_hook(name, caller, fromlist, level)
 
+    @typecheck
     def relations(self) -> list:
         return [(key, val, {"weight": self.cf_weights[val]})
                 for (key, val) in self.cf_imports.keys()]
 
+    @typecheck
     def simple_relations(self) -> list:
         new_weights = Counter()
         relations = []
@@ -147,9 +158,11 @@ class CustomFinder(ModuleFinder):
         return [(key, val, {"weight": self.cf_weights[val]})
                 for (key, val) in relations]
 
-    def as_dict(self):
+    @typecheck
+    def as_dict(self) -> list:
         return [dict([x]) for x in self.cf_imports.keys()]
 
+    @typecheck
     def graph(self) -> nx.Graph:
         if self.cf_mode == "simple":
             data = self.simple_relations()
@@ -165,7 +178,9 @@ class CustomFinder(ModuleFinder):
             raise Exception("Undefined mode.")
         return self.cf_graph_class(data)
 
-    def render(self, layout:str="", labels:bool=True, mode:str="") -> None:
+    @typecheck
+    def render(self, layout:str="", labels:bool=True,
+               mode:str="") -> tc.optional(None):
         if layout:
             self.cf_layout = layout
         if mode:
@@ -175,8 +190,10 @@ class CustomFinder(ModuleFinder):
         elif self.cf_mode == "full":
             self.cf_node_multiplier = 20
         self.draw(labels)
+        return None
 
-    def draw(self, labels:bool) -> None:
+    @typecheck
+    def draw(self, labels:bool) -> tc.optional(None):
         plt.figure(figsize=(12,12))
         graph = self.graph()
         node_sizes = [self.cf_node_multiplier * self.cf_weights[x]
@@ -185,3 +202,4 @@ class CustomFinder(ModuleFinder):
         pos = nx.graphviz_layout(graph, prog=self.cf_layout, root=self.cf_root)
         nx.draw(graph, pos, node_size=node_sizes, node_color=node_colors,
                 with_labels=labels, alpha=0.5, edge_color="#666666")
+        return None
