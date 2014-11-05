@@ -1,5 +1,4 @@
 from collections import Counter
-import itertools
 
 from typecheck import typecheck
 import typecheck as tc

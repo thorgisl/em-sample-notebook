@@ -1,3 +1,6 @@
+import itertools
+
+
 matplotlib_groupings = {
     "backend layer": ["matplotlib.backend",
                       "matplotlib.blocking",
