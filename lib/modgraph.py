@@ -196,28 +196,3 @@ class CustomFinder(ModuleFinder):
         pos = nx.graphviz_layout(graph, prog=self.cf_layout, root=self.cf_root)
         nx.draw(graph, pos, node_size=node_sizes, node_color=node_colors,
                 with_labels=labels, alpha=0.5, edge_color="#666666")
-
-
-def usage(scriptname:str) -> None:
-    print("Usage:\n\t{} filename [layout [mode]]\n".format(scriptname))
-
-
-if __name__ == '__main__':
-    args = sys.argv
-    if len(args) < 2:
-        usage(args[0])
-        exit(1)
-    if len(args) >= 3:
-        layout = args[2]
-    else:
-        layout = "dot"
-    if len(args) >= 4:
-        mode = args[3]
-    else:
-        mode = "full"
-    finder = CustomFinder("__main__", ["matpl", "mpl"], layout, nx.Graph, mode)
-    finder.run_script(sys.argv[1])
-    print("\nModules: ", sorted(finder.modules.keys()))
-    print("\nAs dict: ", finder.as_dict())
-    print("\nWeights: ", finder.cf_weights.items())
-    finder.render()
