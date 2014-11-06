@@ -65,10 +65,8 @@ class ModGrapher:
             new_weights[short_val] += self.finder.cf_weights[val]
             relations.append((short_key, short_val))
         self.weights = new_weights
-        return [(key, val)
+        return [(key, val, {"weight": self.weights[val] or 1})
                 for (key, val) in set(relations)]
-        #return [(key, val, {"weight": self.weights[val] or 1})
-        #        for (key, val) in set(relations)]
 
     @typecheck
     def as_dict(self) -> list:
