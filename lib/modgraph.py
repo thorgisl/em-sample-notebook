@@ -16,7 +16,7 @@ class ModGrapher:
     def __init__(self, source: str="", include: list=None, exclude: list=None,
                  root: str="__main__", layout: str="dot",
                  graph_class: nx.Graph=nx.Graph, mode: str="full", size: int=12,
-                 labels: bool=True, *args, **kwargs):
+                 labels: bool=True, font_size: int=12, *args, **kwargs):
         self.source = source
         include = include or ["matpl", "mpl_"]
         exclude = exclude or ["matplotlib._",
@@ -32,6 +32,7 @@ class ModGrapher:
         self.node_multiplier = 1
         self.size = size
         self.labels = labels
+        self.font_size = font_size
 
     @typecheck
     def get_imports(self) -> list:
@@ -69,6 +70,40 @@ class ModGrapher:
                 for (key, val) in set(relations)]
 
     @typecheck
+    def simple_struct_relations(self) -> list:
+        new_weights = Counter()
+        relations = []
+        for (key, val) in self.get_imports():
+            (short_key, short_val) = (shorten(key), shorten(val))
+            (key_group, val_group) = (get_group(key), get_group(val))
+            new_weights[short_val] += self.finder.cf_weights[val]
+            new_weights[key_group] += self.finder.cf_weights[val]
+            if key_group == val_group:
+                relations.extend([(short_key, key_group),
+                                  (short_val, val_group)])
+            else:
+                relations.append((key_group, val_group))
+        self.weights = new_weights
+        return [(key, val, {"weight": self.weights[val] or 1})
+                for (key, val) in relations]
+
+    @typecheck
+    def struct_relations(self) -> list:
+        new_weights = self.finder.cf_weights
+        relations = []
+        for (key, val) in self.get_imports():
+            (key_group, val_group) = (get_group(key), get_group(val))
+            new_weights[key_group] += self.finder.cf_weights[val]
+            if key_group == val_group:
+                relations.extend([(key, key_group),
+                                  (val, val_group)])
+            else:
+                relations.append((key_group, val_group))
+        self.weights = new_weights
+        return [(key, val, {"weight": self.weights[val] or 1})
+                for (key, val) in relations]
+
+    @typecheck
     def as_dict(self) -> list:
         return [dict([x]) for x in self.get_imports()]
 
@@ -92,7 +127,8 @@ class ModGrapher:
 
     @typecheck
     def render(self, layout: str="", labels: tc.optional(bool)=None,
-               mode: str="", source: str="", size: int=0):
+               mode: str="", source: str="", size: int=0,
+               font_size: tc.optional(int)=None):
         if layout:
             self.layout = layout
         if labels != None:
@@ -104,12 +140,20 @@ class ModGrapher:
             self.weights = Counter()
         if size:
             self.size = size
+        if font_size != None:
+            self.font_size = font_size
         if self.mode == "simple":
             self.node_multiplier = 0.7
         elif self.mode == "full":
             self.node_multiplier = 20
         elif self.mode == "reduced-structure":
             self.node_multiplier = 4
+        elif self.mode == "simple-structure":
+            self.node_multiplier = 4
+            self.font_size = 10
+        elif self.mode == "full-structure":
+            self.node_multiplier = 6
+            self.font_size = 8
         if not self.weights:
             self.finder.run_script(self.source)
         self.draw()
@@ -130,4 +174,5 @@ class ModGrapher:
             print("Node colors size: ", len(node_colors))
         pos = nx.graphviz_layout(graph, prog=self.layout, root=self.root)
         nx.draw(graph, pos, node_size=node_sizes, node_color=node_colors,
-                with_labels=self.labels, alpha=0.5, edge_color="#666666")
+                with_labels=self.labels, alpha=0.5, edge_color="#666666",
+                font_size=self.font_size)
