@@ -1,6 +1,12 @@
 import itertools
 
+from typecheck import typecheck
+import typecheck as tc
 
+
+debug = False
+top_level_group = "top level"
+unknown_group = "unknown"
 matplotlib_groupings = {
     "backend layer": ["matplotlib.backend",
                       "matplotlib.blocking",
@@ -55,9 +61,31 @@ matplotlib_groupings = {
                   "matplotlib.docstring",
                   "matplotlib.finance",
                   "matplotlib.font",
-                  "matplotlib.sphinxext"]}
+                  "matplotlib.sphinxext",
+                  "mpl_tool"]}
 
 
-module_lookup = dict(list(
-    itertools.chain(*[[(x, layer) for x in mod_part]
-                      for (layer, mod_part) in matplotlib_groupings.items()])))
+reverse_matplotlib_groupings = dict(list(
+    itertools.chain(*[[(x, group) for x in mod_part]
+                      for (group, mod_part) in matplotlib_groupings.items()])))
+
+
+@typecheck
+def get_group(mod_name: str) -> str:
+    mod_name = mod_name.strip()
+    if mod_name == "__main__":
+        return mod_name
+    if mod_name == "matplotlib":
+        return top_level_group
+    if mod_name in reverse_matplotlib_groupings:
+        if debug:
+            print("[X] Found quick match for '{}'!".format(mod_name))
+        return reverse_matplotlib_groupings[mod_name]
+    for (mod_part, group) in reverse_matplotlib_groupings.items():
+        if mod_name.startswith(mod_part):
+            if debug:
+                print("[-] Found slow match for '{}'...".format(mod_name))
+            return group
+    if debug:
+        print("[ ] Cound't find match for '{}' ...".format(mod_name))
+    return unknown_group
