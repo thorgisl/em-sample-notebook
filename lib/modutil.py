@@ -65,10 +65,12 @@ def ls(*args):
     command = ["ls -al"] + list(args)
     print(output_filter(run_cmd(*command)))
 
+
 @typecheck
 def rm(*args):
     command = ["rm"] + list(args)
     run_cmd(*command)
+
 
 __all__ = ["shorten", "make_colors", "ls", "rm"]
 del lru_cache, typecheck, nx
