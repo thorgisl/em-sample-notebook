@@ -15,8 +15,9 @@ from modutil import make_colors, shorten
 class ModGrapher:
     def __init__(self, source: str="", include: list=None, exclude: list=None,
                  root: str="__main__", layout: str="dot",
-                 graph_class: nx.Graph=nx.Graph, mode: str="full", size: int=12,
-                 labels: bool=True, font_size: int=12, *args, **kwargs):
+                 graph_class: nx.Graph=nx.Graph, mode: str="full",
+                 size: int=12, labels: bool=True, font_size: int=12,
+                 *args, **kwargs):
         self.source = source
         include = include or ["matpl", "mpl_"]
         exclude = exclude or ["matplotlib._",
@@ -131,7 +132,7 @@ class ModGrapher:
                font_size: tc.optional(int)=None):
         if layout:
             self.layout = layout
-        if labels != None:
+        if labels is not None:
             self.labels = labels
         if mode:
             self.mode = mode
@@ -140,7 +141,7 @@ class ModGrapher:
             self.weights = Counter()
         if size:
             self.size = size
-        if font_size != None:
+        if font_size is not None:
             self.font_size = font_size
         if self.mode == "simple":
             self.node_multiplier = 0.7
