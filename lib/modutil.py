@@ -1,4 +1,5 @@
 from functools import lru_cache
+import subprocess
 
 from typecheck import typecheck
 
@@ -36,3 +37,35 @@ def make_colors(graph: nx.Graph) -> map:
     return map(lambda x, y: x + y,
                [int(10 * x/largest_degrees) for x in degrees],
                [10 * x/largest_raw for x in raw])
+
+
+@typecheck
+def has_excluded(item: str) -> bool:
+    exclude = [".dylibs", "__pycache__", ".so", "__.py", ".nib", ".", ".."]
+    if True in [item.endswith(x) for x in exclude]:
+        return True
+    return False
+
+
+@typecheck
+def output_filter(results: list) -> str:
+    return "\n".join([x for x in results if not has_excluded(x)])
+
+
+@typecheck
+def run_cmd(*command):
+    return subprocess.check_output(
+        " ".join(command),
+        shell=True,
+        universal_newlines=True).splitlines()
+
+
+@typecheck
+def ls(*args):
+    command = ["ls -al"] + list(args)
+    print(output_filter(run_cmd(*command)))
+
+@typecheck
+def rm(*args):
+    command = ["rm"] + list(args)
+    run_cmd(*command)
