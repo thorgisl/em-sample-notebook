@@ -1,7 +1,6 @@
 import itertools
 
 from typecheck import typecheck
-import typecheck as tc
 
 
 debug = False
