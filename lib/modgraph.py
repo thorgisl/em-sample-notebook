@@ -177,3 +177,6 @@ class ModGrapher:
         nx.draw(graph, pos, node_size=node_sizes, node_color=node_colors,
                 with_labels=self.labels, alpha=0.5, edge_color="#666666",
                 font_size=self.font_size)
+
+
+__all__ = ["ModGrapher"]

@@ -69,3 +69,6 @@ def ls(*args):
 def rm(*args):
     command = ["rm"] + list(args)
     run_cmd(*command)
+
+__all__ = ["shorten", "make_colors", "ls", "rm"]
+del lru_cache, typecheck, nx

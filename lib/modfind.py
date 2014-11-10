@@ -34,3 +34,7 @@ class CustomFinder(ModuleFinder):
                 self.cf_weights[name] += 1
                 self.cf_imports[(caller.__name__, name)] = 1
             super().import_hook(name, caller, fromlist, level)
+
+
+__all__ = ["CustomFinder"]
+del Module, ModuleFinder, typecheck, tc

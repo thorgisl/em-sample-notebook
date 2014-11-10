@@ -88,3 +88,8 @@ def get_group(mod_name: str) -> str:
     if debug:
         print("[ ] Cound't find match for '{}' ...".format(mod_name))
     return unknown_group
+
+
+__all__ = ["matplotlib_groupings", "reverse_matplotlib_groupings",
+           "get_group"]
+del typecheck, itertools
