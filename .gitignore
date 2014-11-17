@@ -56,7 +56,7 @@ target/
 *.sw[op]
 
 # Other
-.venv
+.venv-*
 *.png
 *.ipynb_checkpoints/*
 */.ipynb_checkpoints/*
