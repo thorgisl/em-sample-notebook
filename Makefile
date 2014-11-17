@@ -1,6 +1,6 @@
-INCLUDE_REPO=git@github.com:masteringmatplotlib/includes.git
+INCLUDE_REPO=git@github.com:thorgisl/ipython-includes.git
 INCLUDE_DIR=include
-NOTEBOOK=notebooks/mmpl-apis.ipynb
+NOTEBOOK=notebooks/em-sample.ipynb
 
 -include include/common.mk
 
